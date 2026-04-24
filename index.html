@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>COG · Setter Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#0f0f0f;--surface:#181818;--surface2:#222;--border:#2a2a2a;--text:#f0f0f0;--muted:#888;--faint:#444;--green:#4ade80;--green-dim:#1a3d28;--amber:#fbbf24;--amber-dim:#3d2e08;--red:#f87171;--red-dim:#3d1a1a;--gold:#d4a843;--font:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:var(--font);}
+.app{max-width:1100px;margin:0 auto;padding:20px;}
+.card{background:var(--bg);border-radius:12px;overflow:hidden;border:0.5px solid var(--border);}
+.header{padding:16px 24px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.logo{font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:0.15em;text-transform:uppercase;}
+.title{font-size:15px;font-weight:600;color:var(--text);}
+.subtitle{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px;}
+.hdr{display:flex;gap:8px;align-items:center;}
+.btn{padding:6px 16px;border:0.5px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);font-size:11px;font-family:var(--mono);cursor:pointer;transition:all 0.15s;}
+.btn:hover{border-color:var(--faint);color:var(--text);background:var(--surface2);}
+.btn.gold{border-color:var(--gold);color:var(--gold);}
+.btn.gold:hover{background:rgba(212,168,67,0.08);}
+.btn.loading{opacity:0.4;pointer-events:none;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--faint);flex-shrink:0;transition:all 0.3s;}
+.dot.live{background:var(--green);box-shadow:0 0 8px var(--green);}
+.tabs{display:flex;border-bottom:0.5px solid var(--border);overflow-x:auto;}
+.tab{padding:11px 20px;font-size:11px;font-family:var(--mono);color:var(--muted);cursor:pointer;border-bottom:1.5px solid transparent;white-space:nowrap;transition:all 0.15s;letter-spacing:0.05em;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.panel{display:none;padding:24px;}
+.panel.active{display:block;}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:24px;}
+.mc{background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:14px 16px;}
+.lbl{font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px;}
+.val{font-size:22px;font-weight:600;color:var(--text);font-family:var(--mono);}
+.sub{font-size:10px;color:var(--faint);margin-top:3px;font-family:var(--mono);}
+.mc.hi .val{color:var(--gold);}
+.mc.gr .val{color:var(--green);}
+.shd{font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:0.5px solid var(--border);}
+.tw{overflow-x:auto;margin-bottom:24px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{font-size:10px;font-family:var(--mono);color:var(--muted);text-align:left;padding:8px 12px;border-bottom:0.5px solid var(--border);letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap;}
+td{padding:10px 12px;border-bottom:0.5px solid var(--border);color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface);}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-family:var(--mono);font-weight:500;}
+.bg{background:var(--green-dim);color:var(--green);}
+.bm{background:var(--amber-dim);color:var(--amber);}
+.bl{background:var(--red-dim);color:var(--red);}
+.bn{background:var(--surface2);color:var(--faint);}
+.cw{position:relative;width:100%;height:220px;margin-bottom:24px;}
+.sg{display:grid;gap:8px;}
+.sr{display:grid;grid-template-columns:180px 1fr 40px;gap:10px;align-items:center;}
+.sl{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.si{padding:7px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--mono);width:100%;}
+.si:focus{outline:none;border-color:var(--gold);}
+.si::placeholder{color:var(--faint);}
+.notice{font-size:11px;font-family:var(--mono);color:var(--faint);line-height:1.8;}
+.notice.ok{color:var(--green);}
+.notice.err{color:var(--red);}
+.notice.warn{color:var(--amber);}
+.cl{display:grid;gap:8px;max-height:400px;overflow-y:auto;}
+.ci{background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:12px 16px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start;}
+.cs{font-size:12px;color:var(--gold);font-family:var(--mono);}
+.cp{font-size:12px;color:var(--muted);margin-top:2px;}
+.cc{font-size:14px;font-weight:600;color:var(--green);font-family:var(--mono);text-align:right;}
+.ct{font-size:10px;color:var(--faint);text-align:right;margin-top:3px;}
+.divr{border:none;border-top:0.5px solid var(--border);margin:18px 0;}
+.proxy-row{display:grid;grid-template-columns:130px 1fr;gap:10px;margin-bottom:10px;align-items:center;}
+.proxy-lbl{font-size:10px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;}
+.countdown{font-family:var(--mono);font-size:10px;color:var(--faint);}
+</style>
+</head>
+<body>
+<div class="app"><div class="card">
+  <div class="header">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="dot" id="dot"></div>
+      <div>
+        <div class="logo">COG · Setter Ops</div>
+        <div class="title">Team A — Daily Dashboard</div>
+        <div class="subtitle" id="sync-lbl">Loading…</div>
+      </div>
+    </div>
+    <div class="hdr">
+      <span class="countdown" id="countdown"></span>
+      <button class="btn" onclick="exportCSV()">Export CSV</button>
+      <button class="btn gold" id="sync-btn" onclick="syncAll()">↻ Sync All</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('overview',this)">Overview</div>
+    <div class="tab" onclick="switchTab('closes',this)">Closes feed</div>
+    <div class="tab" onclick="switchTab('push',this)">Push data</div>
+    <div class="tab" onclick="switchTab('config',this)">Config</div>
+  </div>
+
+  <div class="panel active" id="tab-overview">
+    <div class="shd">Team totals · <span id="lb-date">—</span></div>
+    <div class="metrics">
+      <div class="mc"><div class="lbl">Total sets</div><div class="val" id="t-sets">—</div></div>
+      <div class="mc"><div class="lbl">Showed</div><div class="val" id="t-showed">—</div></div>
+      <div class="mc hi"><div class="lbl">Closes attr.</div><div class="val" id="t-closes">—</div></div>
+      <div class="mc gr"><div class="lbl">Cash in</div><div class="val" id="t-cash">—</div><div class="sub">setter-attributed</div></div>
+      <div class="mc"><div class="lbl">Set rate</div><div class="val" id="t-sr">—</div><div class="sub" id="t-sr-sub">add GHL user IDs</div></div>
+      <div class="mc"><div class="lbl">Show rate</div><div class="val" id="t-shr">—</div><div class="sub">showed/sets</div></div>
+      <div class="mc"><div class="lbl">Total dials</div><div class="val" id="t-dials">—</div><div class="sub" id="t-dials-sub">from GHL</div></div>
+    </div>
+    <div class="shd">Leaderboard</div>
+    <div class="tw"><table>
+      <thead><tr>
+        <th style="width:4%">#</th><th style="width:20%">Rep</th><th style="width:7%">Sets</th>
+        <th style="width:8%">Showed</th><th style="width:8%">Closes</th><th style="width:10%">Cash in</th>
+        <th style="width:8%">Dials</th><th style="width:13%">Set rate</th><th style="width:13%">Show rate</th><th style="width:9%">GHL</th>
+      </tr></thead>
+      <tbody id="tbody"><tr><td colspan="10" style="text-align:center;color:var(--faint);padding:24px;font-family:var(--mono);font-size:12px">Loading…</td></tr></tbody>
+    </table></div>
+    <div class="shd">Activity</div>
+    <div class="cw"><canvas id="chart"></canvas></div>
+    <div class="notice">Closes attributed via Setter Name in #alicia-ai-closed-deals-all · data pushed by Jacob via Claude · auto-refreshes every 60 min</div>
+  </div>
+
+  <div class="panel" id="tab-closes">
+    <div class="shd">Recent closes — #alicia-ai-closed-deals-all</div>
+    <div class="cl" id="close-list"><div class="notice">Loading…</div></div>
+  </div>
+
+  <div class="panel" id="tab-push">
+    <div class="shd">Push latest data to dashboard</div>
+    <div class="notice warn" style="margin-bottom:16px;">Ask Jacob to pull from Slack, then click below to push the latest numbers live. All viewers will see updated data instantly.</div>
+    <button class="btn gold" id="push-btn" onclick="pushData()" style="margin-bottom:12px;font-size:13px;padding:10px 20px;">↑ Push latest data now</button>
+    <div id="push-result" class="notice" style="margin-top:8px;"></div>
+  </div>
+
+  <div class="panel" id="tab-config">
+    <div class="shd">API config</div>
+    <div class="proxy-row"><span class="proxy-lbl">Proxy URL</span><input class="si" id="proxy-url" value="https://ghl-proxy.jscconsultingbusiness.workers.dev"/></div>
+    <div class="proxy-row"><span class="proxy-lbl">GHL API Key</span><input class="si" id="ghl-key" value="pit-c0027836-804a-4e00-a90c-4ea17eeb243a"/></div>
+    <div class="proxy-row"><span class="proxy-lbl">GHL Location ID</span><input class="si" id="ghl-loc" value="Fk0BkQ526NRxmsgT6LhH"/></div>
+    <div style="display:flex;gap:8px;margin:12px 0 8px;">
+      <button class="btn gold" onclick="testGHL()">Test GHL</button>
+      <button class="btn" onclick="fetchGHLUsers()">Auto-load GHL users</button>
+    </div>
+    <div id="config-result" class="notice"></div>
+    <div class="divr"></div>
+    <div class="shd">Setter → GHL user ID mapping</div>
+    <div class="notice warn" style="margin-bottom:12px;">GHL: Settings → My Staff → click setter → copy ID from URL</div>
+    <div class="sg" id="setup-grid"><div class="notice">Sync first to load reps</div></div>
+    <div style="margin-top:14px;"><button class="btn gold" onclick="saveMapping()">Save mapping + sync dials</button></div>
+  </div>
+</div></div>
+
+<script>
+const PROXY = 'https://ghl-proxy.jscconsultingbusiness.workers.dev';
+const GHL_KEY = 'pit-c0027836-804a-4e00-a90c-4ea17eeb243a';
+const GHL_LOC = 'Fk0BkQ526NRxmsgT6LhH';
+
+let reps = [];
+let closes = [];
+let dials = {};
+let ghlMap = {};
+let closeMap = {};
+let chartInst = null;
+let countdownInterval = null;
+let nextSyncAt = null;
+
+try { ghlMap = JSON.parse(localStorage.getItem('cog_ghl_map') || '{}'); } catch(e) {}
+
+function switchTab(id,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+  if(id==='config'&&reps.length) renderSetup();
+}
+
+function fuzzy(setter,rep){
+  if(!setter||setter.toLowerCase()==='none'||!setter.trim()) return false;
+  const sf=setter.trim().toLowerCase().split(/\s+/);
+  const rf=rep.trim().toLowerCase().split(/\s+/);
+  if(sf[0]===rf[0]) return true;
+  if(sf[0]===rf[0]&&sf[sf.length-1]===rf[rf.length-1]) return true;
+  return false;
+}
+
+function buildCloseMap(){
+  const m={};
+  reps.forEach(r=>m[r.name]={count:0,cash:0});
+  closes.forEach(c=>{
+    if(!c.setter||c.setter==='None'||!c.setter.trim()) return;
+    const match=reps.find(r=>fuzzy(c.setter,r.name));
+    if(match){m[match.name].count++;m[match.name].cash+=c.cash;}
+  });
+  return m;
+}
+
+function fmt(n){return n>=1000?'$'+(n/1000).toFixed(1)+'k':n>0?'$'+Math.round(n):'—';}
+function pill(p){
+  if(p===null) return '<span class="badge bn">—</span>';
+  return `<span class="badge ${p>=20?'bg':p>=10?'bm':'bl'}">${p}%</span>`;
+}
+
+function render(){
+  if(!reps.length) return;
+  closeMap=buildCloseMap();
+  const ts=reps.reduce((s,r)=>s+r.sets,0);
+  const tsh=reps.reduce((s,r)=>s+r.showed,0);
+  const tcl=Object.values(closeMap).reduce((s,v)=>s+v.count,0);
+  const tcash=Object.values(closeMap).reduce((s,v)=>s+v.cash,0);
+  const td=Object.values(dials).reduce((s,v)=>s+(v||0),0);
+  const sr=td?Math.round(ts/td*100):null;
+  const shr=ts?Math.round(tsh/ts*100):null;
+
+  document.getElementById('t-sets').textContent=ts;
+  document.getElementById('t-showed').textContent=tsh;
+  document.getElementById('t-closes').textContent=tcl;
+  document.getElementById('t-cash').textContent=fmt(tcash);
+  document.getElementById('t-sr').textContent=sr!==null?sr+'%':'—';
+  document.getElementById('t-sr-sub').textContent=td?ts+' sets/'+td+' dials':'add GHL user IDs';
+  document.getElementById('t-shr').textContent=shr!==null?shr+'%':'—';
+  document.getElementById('t-dials').textContent=td||'—';
+  document.getElementById('t-dials-sub').textContent=Object.values(ghlMap).some(v=>v)?'from GHL':'map users in config';
+
+  const sorted=[...reps].sort((a,b)=>b.sets-a.sets);
+  document.getElementById('tbody').innerHTML=sorted.map((r,i)=>{
+    const d=dials[r.name]||0;
+    const cl=closeMap[r.name]||{count:0,cash:0};
+    const sr2=d?Math.round(r.sets/d*100):null;
+    const shr2=r.sets?Math.round(r.showed/r.sets*100):null;
+    const pts=r.name.split(' ');
+    const short=pts[0]+(pts[1]?' '+pts[1][0]+'.':'');
+    return `<tr>
+      <td style="font-family:var(--mono);color:var(--faint);font-size:11px">${i+1}</td>
+      <td style="font-weight:500">${short}</td>
+      <td style="font-family:var(--mono)">${r.sets}</td>
+      <td style="font-family:var(--mono)">${r.showed}</td>
+      <td style="font-family:var(--mono)">${cl.count||'—'}</td>
+      <td style="font-family:var(--mono);color:${cl.cash?'#4ade80':'var(--faint)'}">${fmt(cl.cash)}</td>
+      <td style="font-family:var(--mono);color:${d?'var(--text)':'var(--faint)'}">${d||'—'}</td>
+      <td>${pill(sr2)}</td><td>${pill(shr2)}</td>
+      <td style="text-align:center;font-size:13px">${ghlMap[r.name]?'<span style="color:#4ade80">✓</span>':'<span style="color:var(--faint)">—</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  renderChart(sorted);
+  renderCloses();
+}
+
+function renderChart(sorted){
+  if(chartInst){chartInst.destroy();chartInst=null;}
+  const top=sorted.slice(0,12);
+  chartInst=new Chart(document.getElementById('chart').getContext('2d'),{
+    type:'bar',
+    data:{
+      labels:top.map(r=>r.name.split(' ')[0]),
+      datasets:[
+        {label:'Sets',data:top.map(r=>r.sets),backgroundColor:'rgba(74,222,128,0.2)',borderColor:'#4ade80',borderWidth:1},
+        {label:'Showed',data:top.map(r=>r.showed),backgroundColor:'rgba(96,165,250,0.2)',borderColor:'#60a5fa',borderWidth:1},
+        {label:'Closes',data:top.map(r=>(closeMap[r.name]||{}).count||0),backgroundColor:'rgba(212,168,67,0.2)',borderColor:'#d4a843',borderWidth:1},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,position:'bottom',labels:{color:'#666',font:{size:11,family:'IBM Plex Mono'},boxWidth:8,padding:12}}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#555',font:{size:11,family:'IBM Plex Mono'},autoSkip:false,maxRotation:30}},
+        y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#555',font:{size:11,family:'IBM Plex Mono'},precision:0}}
+      }
+    }
+  });
+}
+
+function renderCloses(){
+  const el=document.getElementById('close-list');
+  if(!closes.length){el.innerHTML='<div class="notice">No closes found</div>';return;}
+  el.innerHTML=closes.map(c=>{
+    const has=c.setter&&c.setter!=='None'&&c.setter.trim();
+    return `<div class="ci">
+      <div><div class="cs">${has?c.setter:'No setter tagged'}</div><div class="cp">${c.client||'—'} · ${c.product||'—'}</div></div>
+      <div><div class="cc">${fmt(c.cash)}</div><div class="ct">${c.type||''}</div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderSetup(){
+  document.getElementById('setup-grid').innerHTML=reps.map(r=>`
+    <div class="sr">
+      <span class="sl">${r.name}</span>
+      <input class="si" placeholder="GHL user ID" value="${ghlMap[r.name]||''}"
+        oninput="ghlMap[${JSON.stringify(r.name)}]=this.value.trim()"/>
+      <span style="font-size:10px;color:var(--green);opacity:0;font-family:var(--mono)" id="gf-${r.name.replace(/\W/g,'_')}">✓</span>
+    </div>`).join('');
+}
+
+// Pull data from KV store via proxy
+async function loadFromKV(){
+  try{
+    const r=await fetch(`${PROXY}/data`);
+    if(r.ok){
+      const d=await r.json();
+      if(d.reps&&d.reps.length){
+        reps=d.reps;
+        closes=d.closes||[];
+        reps.forEach(r=>{if(dials[r.name]===undefined)dials[r.name]=0;});
+        document.getElementById('lb-date').textContent=d.date||'—';
+        document.getElementById('dot').classList.add('live');
+        document.getElementById('sync-lbl').textContent='Data from Claude sync · '+d.date+' · '+d.synced;
+        render();
+        return true;
+      }
+    }
+  }catch(e){}
+  return false;
+}
+
+async function pullDials(){
+  const proxy=document.getElementById('proxy-url').value.trim();
+  const key=document.getElementById('ghl-key').value.trim();
+  const loc=document.getElementById('ghl-loc').value.trim();
+  if(!Object.values(ghlMap).some(v=>v)) return 0;
+  const start=new Date();start.setHours(0,0,0,0);
+  const end=new Date();end.setHours(23,59,59,999);
+  let pulled=0;
+  for(const r of reps){
+    const uid=ghlMap[r.name];if(!uid)continue;
+    try{
+      const resp=await fetch(`${proxy}/contacts/?locationId=${loc}&assignedTo=${uid}&startDate=${start.toISOString()}&endDate=${end.toISOString()}&limit=100`,
+        {headers:{'Authorization':'Bearer '+key,'Version':'2021-07-28'}});
+      if(resp.ok){const data=await resp.json();dials[r.name]=data?.meta?.total||data?.contacts?.length||0;pulled++;}
+    }catch(e){}
+  }
+  return pulled;
+}
+
+async function testGHL(){
+  const proxy=document.getElementById('proxy-url').value.trim();
+  const key=document.getElementById('ghl-key').value.trim();
+  const loc=document.getElementById('ghl-loc').value.trim();
+  const el=document.getElementById('config-result');
+  el.textContent='Testing…';el.className='notice';
+  try{
+    const r=await fetch(`${proxy}/locations/${loc}`,{headers:{'Authorization':'Bearer '+key,'Version':'2021-07-28'}});
+    if(r.ok){const d=await r.json();el.textContent='✓ GHL connected · '+(d?.location?.name||d?.name||'OK');el.className='notice ok';}
+    else{el.textContent='✗ GHL error '+r.status;el.className='notice err';}
+  }catch(e){el.textContent='✗ '+e.message;el.className='notice err';}
+}
+
+async function fetchGHLUsers(){
+  const proxy=document.getElementById('proxy-url').value.trim();
+  const key=document.getElementById('ghl-key').value.trim();
+  const loc=document.getElementById('ghl-loc').value.trim();
+  const el=document.getElementById('config-result');
+  el.textContent='Loading GHL users…';el.className='notice';
+  try{
+    let users=null;
+    for(const ep of[`/users/?locationId=${loc}`,`/users/search?locationId=${loc}`]){
+      const d=await(await fetch(`${proxy}${ep}`,{headers:{'Authorization':'Bearer '+key,'Version':'2021-07-28'}})).json();
+      users=d?.users||d?.data||d;
+      if(Array.isArray(users)&&users.length)break;
+    }
+    if(!users||!Array.isArray(users)||!users.length){el.textContent='✗ Could not load users';el.className='notice err';return;}
+    let matched=0;
+    for(const u of users){
+      const fn=((u.name||'')+' '+(u.firstName||'')+' '+(u.lastName||'')).trim().toLowerCase();
+      const uid=u.id||u._id;if(!uid)continue;
+      for(const r of reps){
+        const rf=r.name.split(' ')[0].toLowerCase(),rl=r.name.split(' ').slice(-1)[0].toLowerCase();
+        if(fn.includes(rf)&&fn.includes(rl)){ghlMap[r.name]=uid;matched++;}
+      }
+    }
+    try{localStorage.setItem('cog_ghl_map',JSON.stringify(ghlMap));}catch(e){}
+    el.textContent=`✓ ${users.length} users · ${matched} matched`;el.className='notice ok';
+    renderSetup();
+  }catch(e){el.textContent='✗ '+e.message;el.className='notice err';}
+}
+
+async function pushData() {
+  const btn = document.getElementById('push-btn');
+  const el = document.getElementById('push-result');
+  btn.textContent = 'Pushing…';
+  el.textContent = 'Pushing…'; el.className = 'notice';
+  const payload = {
+    date:"04/24/26", synced:new Date().toLocaleTimeString(),
+    reps:[
+      {name:"Daniel Bonner-Watkins",sets:2,showed:0,closes:0},
+      {name:"Jayson Pablo",sets:0,showed:0,closes:0},
+      {name:"Neto Onwu",sets:0,showed:0,closes:0},
+      {name:"Aleks Izgagin",sets:0,showed:0,closes:0},
+      {name:"Adam Vandereydt",sets:0,showed:0,closes:0},
+      {name:"Lina Victoria",sets:0,showed:0,closes:0},
+      {name:"Rebecca Anderson",sets:0,showed:0,closes:0},
+      {name:"Charlie Tseng",sets:0,showed:0,closes:0},
+      {name:"Karl Angelo Nogueras",sets:0,showed:0,closes:0},
+      {name:"Hugo Naude",sets:0,showed:0,closes:0},
+      {name:"Chanel Strowder",sets:0,showed:0,closes:0},
+      {name:"Gabriela Torres",sets:0,showed:0,closes:0},
+      {name:"Valantis",sets:0,showed:0,closes:0},
+      {name:"Maya",sets:0,showed:0,closes:0},
+      {name:"Braden Duncan",sets:0,showed:0,closes:0},
+      {name:"Alexis A",sets:0,showed:0,closes:0}
+    ],
+    closes:[
+      {setter:"Chrysovalantis Vasileiou",cash:7000,product:"AI Power Circle Mastermind",type:"Payment Collection",client:"Poinsetta Tillman"},
+      {setter:"Adam Vandereydt",cash:2250,product:"AI Consultant Cert",type:"New Sale",client:"Treva Bendy"},
+      {setter:"None",cash:200,product:"AI Agents Course",type:"Payment Collection",client:"Joan Pounds"},
+      {setter:"None",cash:4997,product:"AI Consultant Cert",type:"New Sale",client:"Christian Pernell"},
+      {setter:"None",cash:3325,product:"AI Consultant Cert",type:"New Sale",client:"Camille Mitchell"},
+      {setter:"None",cash:3375,product:"AI Consultant Cert",type:"New Sale",client:"Victoria Bienvenu"},
+      {setter:"None",cash:300,product:"AI Agent Course",type:"New Sale",client:"Mario Allen"},
+      {setter:"None",cash:2997,product:"AI Consultant Cert",type:"New Sale",client:"Tenisia Evans"}
+    ]
+  };
+  try {
+    const r = await fetch(PROXY+'/data',{method:'POST',headers:{'Content-Type':'application/json','x-secret':'cog2026'},body:JSON.stringify(payload)});
+    const t = await r.text();
+    if(t==='ok'){
+      el.textContent='✓ Pushed! Loading dashboard…';el.className='notice ok';
+      await loadFromKV();render();
+    } else {el.textContent='Response: '+t;el.className='notice warn';}
+  } catch(e){el.textContent='✗ '+e.message;el.className='notice err';}
+  btn.textContent='↑ Push latest data now';
+}
+
+function saveMapping(){
+  try{localStorage.setItem('cog_ghl_map',JSON.stringify(ghlMap));}catch(e){}
+  syncAll();
+}
+
+async function syncAll(){
+  const btn=document.getElementById('sync-btn');
+  btn.classList.add('loading');btn.textContent='↻ Syncing…';
+  document.getElementById('sync-lbl').textContent='Syncing…';
+
+  await loadFromKV();
+  const dialsPulled=await pullDials();
+  if(dialsPulled>0) render();
+
+  const t=new Date().toLocaleTimeString();
+  if(reps.length){
+    document.getElementById('sync-lbl').textContent='Synced '+t+(dialsPulled>0?' · GHL dials live':'');
+    document.getElementById('dot').classList.add('live');
+  } else {
+    document.getElementById('sync-lbl').textContent='No data yet — ask Jacob to push from Claude';
+  }
+
+  scheduleNext();
+  btn.classList.remove('loading');btn.textContent='↻ Sync All';
+}
+
+function scheduleNext(){
+  if(countdownInterval)clearInterval(countdownInterval);
+  nextSyncAt=Date.now()+60*60*1000;
+  setTimeout(syncAll,60*60*1000);
+  countdownInterval=setInterval(()=>{
+    const rem=Math.max(0,nextSyncAt-Date.now());
+    const m=Math.floor(rem/60000),s=Math.floor((rem%60000)/1000);
+    document.getElementById('countdown').textContent=rem>0?`next sync ${m}m ${s}s`:'';
+  },1000);
+}
+
+function exportCSV(){
+  if(!reps.length){alert('Sync first');return;}
+  const cm=buildCloseMap();
+  const h='Rep,Sets,Showed,Closes Attributed,Cash Collected,Dials,Set Rate,Show Rate';
+  const rows=[...reps].sort((a,b)=>b.sets-a.sets).map(r=>{
+    const d=dials[r.name]||0,cl=cm[r.name]||{count:0,cash:0};
+    return `${r.name},${r.sets},${r.showed},${cl.count},${cl.cash},${d||''},${d?Math.round(r.sets/d*100)+'%':'—'},${r.sets?Math.round(r.showed/r.sets*100)+'%':'—'}`;
+  });
+  const blob=new Blob([[h,...rows].join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='cog_setters_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+
+syncAll();
+</script>
+</body></html>
